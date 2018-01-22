@@ -11,22 +11,25 @@ crypto = require('crypto');
 // decoding
 zlib = require('zlib');
 
+// assert
+assert = require('assert')
+
 // sessions
-session = require('express-session');
-MongoDBStore = require('connect-mongodb-session')(session);
+// session = require('express-session');
+// MongoDBStore = require('connect-mongodb-session')(session);
 
 // templates
 ejs = require('ejs'); // https://www.npmjs.com/package/ejs
 
-var store = new MongoDBStore({
-	uri: process.env.MONGODB_URL,
-	collection: 'sessions'
-});
-// Catch errors
-store.on('error', function(error) {
-	assert.ifError(error);
-	assert.ok(false);
-});
+// var store = new MongoDBStore({
+// 	uri: process.env.MONGODB_URL,
+// 	collection: 'sessions'
+// });
+// // Catch errors
+// store.on('error', function(error) {
+// 	assert.ifError(error);
+// 	assert.ok(false);
+// });
 
 // app config
 app.set('view engine','ejs');
@@ -46,21 +49,21 @@ app.use(function(req, res, next){
 });
 
 // start session // 7NFVOF8P
-var sesssionOptions = {
-	secret: '7NFVOF8P',
-	cookie: {},
-	store: store,
-	resave: false,
-	saveUninitialized: false
-}
+// var sesssionOptions = {
+// 	secret: '7NFVOF8P',
+// 	cookie: {},
+// 	store: store,
+// 	resave: false,
+// 	saveUninitialized: false
+// }
 
 if(process.env.APP_ENVIRONMENT === 'production') {
 	app.set('trust proxy', 1) // trust first proxy
 	sesssionOptions.cookie.secure = true // serve secure cookies
 }
 
-app.use(session(sesssionOptions))
-ssn = undefined;
+// app.use(session(sesssionOptions))
+// ssn = undefined;
 
 app.use(function(req,res,next){
 	if(req.session){
