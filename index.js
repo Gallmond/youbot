@@ -11,6 +11,8 @@ if(!process.env.APP_ENVIRONMENT || process.env.APP_ENVIRONMENT=="local"){
 	}
 }
 
+helpers = require('./helpers.js');
+
 // routing
 express = require('express');
 app = express();
@@ -31,7 +33,15 @@ app.use(function(req, res, next){
 	req.on('data', function(chunk){ data += chunk})
 	req.on('end', function(){
 		req.rawBody = data;
-		parseBody(req); // adds post parameters to req.postparams
+		//parseBody(req); // adds post parameters to req.postparams
+		helpers.parseBody(req); // adds post parameters to req.postparams
+
+		console.log("\r\n ===== APP USE ");
+		console.log("ONE req.params", req.params);
+		console.log("ONE req.postparams", req.postparams);
+		console.log("ONE req.body", req.body);
+		console.log("ONE req.rawBody", req.rawBody);
+
 		next();
 	});
 });
@@ -41,6 +51,15 @@ if(process.env.APP_ENVIRONMENT === 'production') {
 	sesssionOptions.cookie.secure = true // serve secure cookies
 }
 
+// ===================== CUSTOM INITS
+
+
+
+
+
+
+
+// ===================== ROUTING BELOW
 
 // signup and login page
 app.get(['/signup','/login'], (req, res)=>{
@@ -50,9 +69,18 @@ app.get(['/signup','/login'], (req, res)=>{
 // signup and login form handling
 app.post(['/signup','/login'], (req, res)=>{
 
+	console.log("\r\n ===== FORM HANDLER ");
+	console.log("ONE req.params", req.params);
+	console.log("ONE req.postparams", req.postparams);
+	console.log("ONE req.body", req.body);
+	console.log("ONE req.rawBody", req.rawBody);
 
+	var paramString = "";
+	for(var key in req.postparams){
+		paramString+= key+": "+req.postparams[key]+"<br />";
+	}
 
-	res.send(JSON.stringify(req.params));
+	res.send(paramString);
 
 
 });
@@ -65,26 +93,4 @@ app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
 
-console.log("end of index.js");
 
-
-// helper function to parse post bodies
-parseBody = (req)=>{
-	var rawBody = req.rawBody || ""; 
-	var params = [];
-	if( req.is('urlencoded') ){ // parse urlencoded foo=bar&hello=goodbye&one=two
-		rawBody = rawBody.replace(/\+/gi, "%20"); // by default forms encode spaces as '+', not '%20'
-		var bodyArr = rawBody.split("&"); // like ["foo=bar", "hello=goodbye", "one=two"]
-		for(item in bodyArr){
-			params[bodyArr[item].split("=")[0]] = decodeURIComponent(bodyArr[item].split("=")[1]);
-		}
-	}else if( req.is('json') ){ // like {"foo":"bar", "name":"gavin"}
-		var parsedString = JSON.parse(rawBody);
-		var keys = Object.keys(parsedString);
-		for(var i = 0; i < keys.length; i++){
-			params[keys[i]] = parsedString[keys[i]];
-		}
-	}
-	req.postparams = params;
-	return params;
-}
