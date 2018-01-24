@@ -20,3 +20,47 @@ module.exports.parseBody = (_req)=>{
 	return params;
 }
 
+module.exports.valid = {
+	email: (_email)=>{
+		if(typeof _email != "string"){
+			return false;
+		}else{
+			var matches = _email.match(/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/gi);
+			if(matches.length!=null && matches.length==1 && matches[0]==_email){
+				return true;
+			}else{
+				return false;
+			}
+		}
+	},
+	password: (_password)=>{
+		if(typeof _password != "string"){
+			return false;
+		}else if(_password.length<(parseInt(process.env.PASSWORD_MIN_LEN) || 8)){ // too short
+			return false;
+		}else{
+			return true;
+		}
+	}
+
+}
+
+module.exports.enc = (_string)=>{
+	var algorithm = 'aes-256-ctr';
+	var secret = process.env['ENC_KEY_'+process.env.CURRENT_ENC_KEY];
+	var cipher = crypto.createCipher(algorithm,secret);
+	var crypted = cipher.update(_string,'utf8','hex');
+	crypted += cipher.final('hex');
+	return String(process.env.CURRENT_ENC_KEY)+"_"+crypted;
+}
+
+module.exports.dec = (_string)=>{
+	var string_parts = _string.split("_");
+	var key_to_use = "ENC_KEY_"+string_parts[0];
+	var encryptedString = string_parts[1];
+	var algorithm = 'aes-256-ctr';
+	var decipher = crypto.createDecipher(algorithm,process.env[key_to_use]);
+	var dec = decipher.update(encryptedString,'hex','utf8')
+	dec += decipher.final('utf8');
+	return dec;
+}

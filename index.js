@@ -11,7 +11,11 @@ if(!process.env.APP_ENVIRONMENT || process.env.APP_ENVIRONMENT=="local"){
 	}
 }
 
-helpers = require('./helpers.js');
+// database
+mongo = require('mongodb');
+
+// crypto 
+crypto = require('crypto');
 
 // routing
 express = require('express');
@@ -33,15 +37,7 @@ app.use(function(req, res, next){
 	req.on('data', function(chunk){ data += chunk})
 	req.on('end', function(){
 		req.rawBody = data;
-		//parseBody(req); // adds post parameters to req.postparams
 		helpers.parseBody(req); // adds post parameters to req.postparams
-
-		console.log("\r\n ===== APP USE ");
-		console.log("ONE req.params", req.params);
-		console.log("ONE req.postparams", req.postparams);
-		console.log("ONE req.body", req.body);
-		console.log("ONE req.rawBody", req.rawBody);
-
 		next();
 	});
 });
@@ -52,7 +48,7 @@ if(process.env.APP_ENVIRONMENT === 'production') {
 }
 
 // ===================== CUSTOM INITS
-
+helpers = require('./helpers.js');
 
 
 
@@ -68,22 +64,33 @@ app.get(['/signup','/login'], (req, res)=>{
 
 // signup and login form handling
 app.post(['/signup','/login'], (req, res)=>{
-
-	console.log("\r\n ===== FORM HANDLER ");
-	console.log("ONE req.params", req.params);
-	console.log("ONE req.postparams", req.postparams);
-	console.log("ONE req.body", req.body);
-	console.log("ONE req.rawBody", req.rawBody);
-
 	var paramString = "";
 	for(var key in req.postparams){
 		paramString+= key+": "+req.postparams[key]+"<br />";
 	}
-
 	res.send(paramString);
+});
 
+
+
+// ================================== TESTING
+user_ = require('./utility/user.js');
+user = new user_();
+
+app.get(['/test'], (req, res)=>{
+	
+	var plain = "this is a plaintext string";
+console.log("plain",plain);
+	var enc = helpers.enc(plain);
+console.log("enc",enc);
+	var dec = helpers.dec(enc);
+console.log("dec",dec);
+
+	res.send("OK");
 
 });
+// ================================== TESTING
+
 
 app.get('*', function (req, res) {
 	res.status(404).send("page not found");
@@ -92,5 +99,3 @@ app.get('*', function (req, res) {
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
-
-
