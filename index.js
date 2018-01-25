@@ -64,11 +64,25 @@ app.get(['/signup','/login'], (req, res)=>{
 
 // signup and login form handling
 app.post(['/signup','/login'], (req, res)=>{
-	var paramString = "";
-	for(var key in req.postparams){
-		paramString+= key+": "+req.postparams[key]+"<br />";
+
+	var expects = [
+		["signup_email","signup_email_confirm","signup_password"],
+		["login_email","login_password"]
+	];
+
+	for(propName in res.postparams){
+
 	}
-	res.send(paramString);
+
+	// expects:
+	// signup_email
+	// signup_email_confirm
+	// signup_password
+	// OR
+	// login_email
+	// login_password
+
+
 });
 
 
@@ -79,14 +93,7 @@ user = new user_();
 
 app.get(['/test'], (req, res)=>{
 	
-	var plain = "this is a plaintext string";
-console.log("plain",plain);
-	var enc = helpers.enc(plain);
-console.log("enc",enc);
-	var dec = helpers.dec(enc);
-console.log("dec",dec);
 
-	res.send("OK");
 
 });
 // ================================== TESTING

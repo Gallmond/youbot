@@ -64,3 +64,4 @@ module.exports.dec = (_string)=>{
 	dec += decipher.final('utf8');
 	return dec;
 }
+

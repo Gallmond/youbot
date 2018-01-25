@@ -2,16 +2,19 @@ module.exports = function(){
 	this.crypto = (typeof crypto === "undefined" ? require('crypto') : crypto);
 	this.mongo = (typeof mongo === "undefined" ? require('mongodb') : mongo);
 	this.generatePassword = (_plaintextpass)=>{
-		// ======== password creation START
 		var salt = this.crypto.randomBytes(16).toString('hex'); // 32 char as hex
 		var derrivedKey = this.crypto.pbkdf2Sync(_plaintextpass, salt, 100000, 512, 'sha512');
 		var hexDerrivedKey = derrivedKey.toString('hex');
 		var passOutput = salt+""+hexDerrivedKey;
-		// ======== password creation END
 		return passOutput;
 	};
 
+	this.sendVerifyEmail = (_userid)=>{
+		return new Promise((resolve, reject)=>{
 
+		});
+	};// sendVerifyEmail end
+	
 	this.signup = (_email, _password)=>{
 		return new Promise((resolve, reject)=>{
 
@@ -32,8 +35,7 @@ module.exports = function(){
 				encEmail: helpers.enc(_email),
 				hashPassword: hashedPassword 
 				created_at: now,
-				verified_email: false,
-				verified_email_token: validationString
+				verified_email: false
 			}
 
 			// connect to db
@@ -55,15 +57,26 @@ module.exports = function(){
 						return reject({error: "this email is in use", details:{email:_email}});	
 					}
 
-					return resolve();
+					// insert doc
+					db.collection("users").insertOne(userDoc)
+					.then((res)=>{
+						if(res.result.n==1){
+
+							// attempt to send email
+							console.log("SEND EMAIL NOW!")
+
+
+						}else{
+							return reject({ error: "failed to add user to db" });
+						}
+					},(err)=>{
+						db.close();
+						return reject({error: "error inserting new doc", details:err});	
+					});
 
 				});
-
 			});
-
-
-
 		});
-	}
+	};// signup end
 
 }
