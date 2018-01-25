@@ -42,10 +42,7 @@ app.use(function(req, res, next){
 	});
 });
 
-if(process.env.APP_ENVIRONMENT === 'production') {
-	app.set('trust proxy', 1) // trust first proxy
-	sesssionOptions.cookie.secure = true // serve secure cookies
-}
+
 
 // ===================== CUSTOM INITS
 helpers = require('./helpers.js');
