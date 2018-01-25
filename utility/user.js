@@ -33,7 +33,7 @@ module.exports = function(){
 			var now = new Date().valueOf();
 			var userDoc = {
 				encEmail: helpers.enc(_email),
-				hashPassword: hashedPassword 
+				hashPassword: hashedPassword, 
 				created_at: now,
 				verified_email: false
 			}
