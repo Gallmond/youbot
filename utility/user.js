@@ -11,6 +11,9 @@ module.exports = function(){
 
 	this.sendVerifyEmail = (_userid)=>{
 		return new Promise((resolve, reject)=>{
+			if(process.env.APP_DEBUG=="true"){
+				console.log("in sendVerifyEmail");
+			}
 
 		});
 	};// sendVerifyEmail end
@@ -39,7 +42,7 @@ module.exports = function(){
 			}
 
 			// connect to db
-			this.mongo.MongoClient.connect(this.MONGO_URL, (err, db)=>{
+			this.mongo.MongoClient.connect(process.env.MONGO_URL, (err, db)=>{
 				if(err){
 					return reject({error: "couldn't connect to mongodb", details:err});
 				}
@@ -63,7 +66,9 @@ module.exports = function(){
 						if(res.result.n==1){
 
 							// attempt to send email
-							console.log("SEND EMAIL NOW!")
+							if(process.env.APP_DEBUG=="true"){
+								console.log("attempt to send email");
+							}
 
 
 						}else{

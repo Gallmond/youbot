@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Confirm email for <%= process.env.APP_NAME %></title>
+	</head>
+	<body>
+		<div>
+			<p>Thank you for registering on <%= process.env.APP_NAME %></p>
+			<p>Please <h1>click here</h1> to verify your email address<br />
+			or copy the token inside the [brackets] below and paste it into the box at <a href="<%= process.env.APP_DOMAIN %>/verify_email"><%= process.env.APP_DOMAIN %>/verify_email</a></p>
+			<br />
+			<br />
+			<h2>token: [<%= verification_token %>]</h2>
+
+
+		</div>
+
+
+	</body>
+</html>

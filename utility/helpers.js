@@ -25,6 +25,7 @@ module.exports.valid = {
 		if(typeof _email != "string"){
 			return false;
 		}else{
+			console.log(_email);
 			var matches = _email.match(/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/gi);
 			if(matches.length!=null && matches.length==1 && matches[0]==_email){
 				return true;
@@ -63,5 +64,21 @@ module.exports.dec = (_string)=>{
 	var dec = decipher.update(encryptedString,'hex','utf8')
 	dec += decipher.final('utf8');
 	return dec;
+}
+
+module.exports.template = (_pathfromviewfolder, _data)=>{ // where _path is like emails.filename
+	return new Promise((resolve, reject)=>{
+		if(!ejs){
+			return reject({error: "ejs is not defined"});
+		}
+		var sa = _pathfromviewfolder.split(".");// filepath string
+		var s = "views/"+sa.join("/")+".ejs";
+		ejs.renderFile(s, _data, (_err, _str)=>{
+			if(_err){
+				return reject({error: "ejs failed to render file", details: _err});
+			}
+			return resolve({success: "ejs rendered file", str:_str });
+		});
+	});
 }
 

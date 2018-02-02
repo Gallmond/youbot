@@ -45,7 +45,8 @@ app.use(function(req, res, next){
 
 
 // ===================== CUSTOM INITS
-helpers = require('./helpers.js');
+helpers = require('./utility/helpers.js');
+user = require('./utility/user.js');
 
 
 
@@ -53,6 +54,12 @@ helpers = require('./helpers.js');
 
 
 // ===================== ROUTING BELOW
+app.use(function(req, res, next){
+	var requestingURL = req.protocol + '://' + req.get('host') + req.originalUrl;
+	console.log(req.method+" request to "+requestingURL);
+	next();
+});
+
 
 // signup and login page
 app.get(['/signup','/login'], (req, res)=>{
@@ -62,23 +69,23 @@ app.get(['/signup','/login'], (req, res)=>{
 // signup and login form handling
 app.post(['/signup','/login'], (req, res)=>{
 
-	var expects = [
-		["signup_email","signup_email_confirm","signup_password"],
-		["login_email","login_password"]
-	];
+	// get input
+	var email = String(req.postparams["signup_email"]);
+	var pass = String(req.postparams["signup_password"]);
 
-	for(propName in res.postparams){
+	user.signup(email, pass).then((obj)=>{
+		// signup() resolve
+		console.log("user.signup resolved:");
+		console.log(obj);
 
-	}
+	},(obj)=>{
+		// signup() reject
+		console.log("user.signup reject:");
+		console.log(obj);
 
-	// expects:
-	// signup_email
-	// signup_email_confirm
-	// signup_password
-	// OR
-	// login_email
-	// login_password
+	})
 
+	res.send("OK");
 
 });
 
@@ -90,6 +97,21 @@ user = new user_();
 
 app.get(['/test'], (req, res)=>{
 	
+	// var str = helpers.template('email.verify_email', {foo: "bar"});
+	// console.log("str", str);
+	// res.send(str);
+
+	helpers.template('email.verify_email', {verification_token: "thisistoken"}).then((obj)=>{
+		// template resolve
+		console.log("template resolve", obj);
+		res.send(obj.str);
+
+	},(obj)=>{
+		// template reject	
+		console.log("template reject", obj);
+		res.send(obj.error);
+
+	});
 
 
 });
