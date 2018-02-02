@@ -66,6 +66,8 @@ module.exports.dec = (_string)=>{
 	return dec;
 }
 
+
+
 module.exports.template = (_pathfromviewfolder, _data)=>{ // where _path is like emails.filename
 	return new Promise((resolve, reject)=>{
 		if(!ejs){
@@ -81,4 +83,3 @@ module.exports.template = (_pathfromviewfolder, _data)=>{ // where _path is like
 		});
 	});
 }
-

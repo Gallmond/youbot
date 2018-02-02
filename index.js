@@ -103,7 +103,6 @@ app.get(['/test'], (req, res)=>{
 
 	helpers.template('email.verify_email', {verification_token: "thisistoken"}).then((obj)=>{
 		// template resolve
-		console.log("template resolve", obj);
 		res.send(obj.str);
 
 	},(obj)=>{
