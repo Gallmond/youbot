@@ -46,10 +46,10 @@ module.exports = function(_to, _from, _subject, _emailbody){
 				this.headers = response.headers;
 				this.messageID = response.headers["x-message-id"] || "";
 				this.responseBody = ''
-				response.on('data', function (chunk) {
+				response.on('data', (chunk)=>{
 					this.responseBody += chunk;
 				});
-				response.on('end', function () {
+				response.on('end', ()=>{
 					emailReq.end();
 					return resolve({success:"sendgrid accepted", details:{id: this.messageID, statuscode: this.statusCode, body: this.responseBody}});
 				});

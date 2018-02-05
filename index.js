@@ -47,6 +47,8 @@ app.use(function(req, res, next){
 // ===================== CUSTOM INITS
 helpers = require('./utility/helpers.js');
 user = require('./utility/user.js');
+user = new user();
+emailer = require('./utility/email.js');
 
 
 
@@ -85,15 +87,54 @@ app.post(['/signup','/login'], (req, res)=>{
 
 	})
 
-	res.send("OK");
+	res.send("Thank you. Please check your email inbox for the verification link.");
+
+});
+
+// verification destination
+app.get(['/verify_email/:token','/verify_email'], (req, res)=>{
+
+	// if the token is defined from the url structure, attempt to verify the address
+	if(req.params.token!=undefined || req.query.token!=undefined){
+
+		console.log("req.params.token", req.params.token);	
+		console.log("req.query.token", req.query.token);	
+
+		if(req.params.token){
+			var thisToken = req.params.token; 
+		}else if(req.query.token){
+			var thisToken = req.query.token; 
+
+		}
+
+		user.attemptEmailVerification(thisToken).then((obj)=>{
+			// attemptEmailVerification resolve
+			console.log("user.signup resolved:");
+			console.log(obj);
+			res.send("OK SEND TO DASHBOARD");
+		},(obj)=>{
+			// attemptEmailVerification reject
+			console.log("user.signup resolved:");
+			console.log(obj);
+
+			res.render('verify_email', {debug:process.env.APP_DEBUG, verification_token:thisToken, error_message: obj.error});
+
+		});
+
+
+	}else{// if the token is not defined, show the submission form
+
+		res.render('verify_email', {debug:process.env.APP_DEBUG, verification_token:req.params.token});
+	}
 
 });
 
 
 
+
+
 // ================================== TESTING
-user_ = require('./utility/user.js');
-user = new user_();
+
 
 app.get(['/test'], (req, res)=>{
 	
@@ -101,7 +142,7 @@ app.get(['/test'], (req, res)=>{
 	// console.log("str", str);
 	// res.send(str);
 
-	helpers.template('email.verify_email', {verification_token: "thisistoken"}).then((obj)=>{
+	helpers.template('verify_email', {verification_token: "thisistoken"}).then((obj)=>{
 		// template resolve
 		res.send(obj.str);
 

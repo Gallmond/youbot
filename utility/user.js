@@ -9,12 +9,102 @@ module.exports = function(){
 		return passOutput;
 	};
 
-	this.sendVerifyEmail = (_userid)=>{
+	this.attemptEmailVerification = (_verificationtoken)=>{
+		return new Promise((resolve, reject)=>{
+
+			// connect to db
+			// connect to db
+			this.mongo.MongoClient.connect(process.env.MONGO_URL, (err, db)=>{
+				if(err){
+					return reject({error: "couldn't connect to mongodb", details:err});
+				}
+
+				// search and update if exists
+				var query = {
+					verified_email_token: _verificationtoken,
+					verified_email: false
+				}
+				var update = {
+					$set: {
+						verified_email: true,
+						verified_email_token: false,
+					}
+				}
+				
+				db.collection("users").findOneAndUpdate(query, update, {returnOriginal: false}, (err, result)=>{
+					
+					if(err){
+						db.close();
+						return reject({error:"error in update", details:err});
+					}
+
+					if(process.env.APP_DEBUG=="true"){
+						console.log("result", result);
+						console.log("query", query);
+					}
+
+					if(result.ok){
+						db.close();
+
+						if(result.lastErrorObject.updatedExisting){
+							return resolve({success:"email is now verified"});
+						}else{
+							return reject({error:"couldn't find document with this token", details:{token:_verificationtoken}});
+						}
+						
+					}
+			
+					db.close();
+					return reject({error: "findOneAndUpdate failed", details: result});
+
+				});// find end
+
+			});// connect end
+
+		});
+	}; // this.attemptEmailVerification end
+
+	this.sendVerifyEmail = (_userdoc)=>{
 		return new Promise((resolve, reject)=>{
 			if(process.env.APP_DEBUG=="true"){
 				console.log("in sendVerifyEmail");
 			}
 
+			if(_userdoc.verified_email){
+				// email already verified
+				return reject({error: "email is already verified"});
+			}else{
+
+				var to = helpers.dec(_userdoc.encEmail);
+				var from = process.env.APP_EMAIL;
+				var subject = "Verify you email for "+process.env.APP_NAME;
+
+				helpers.template('email.verify_email', {verification_token: _userdoc.verified_email_token}).then((obj)=>{
+					// helpers.template resolve
+					var emailbody = obj.str;
+
+					var verifyEmail = new emailer(to, from, subject, emailbody); // (_to, _from, _subject, _emailbody)
+					verifyEmail.send().then((obj)=>{
+						// emailer send resolve
+						if(process.env.APP_DEBUG=="true"){
+							console.log("verifyEmail.send sent");
+							console.log(obj);
+						}
+						return resolve({success:"send verification email", details: obj});
+					},(obj)=>{
+						// emailer send reject
+						if(process.env.APP_DEBUG=="true"){
+							console.log("verifyEmail.send failed");
+							console.log(obj);
+						}
+						return reject({error:"send verification emailfailed ", details: obj});
+					})
+
+				},(obj)=>{
+					// helpers.template reject
+					return reject({error: "couldn't render email template", details:obj});
+				});
+			}
 		});
 	};// sendVerifyEmail end
 	
@@ -38,7 +128,8 @@ module.exports = function(){
 				encEmail: helpers.enc(_email),
 				hashPassword: hashedPassword, 
 				created_at: now,
-				verified_email: false
+				verified_email: false,
+				verified_email_token: validationString,
 			}
 
 			// connect to db
@@ -48,7 +139,7 @@ module.exports = function(){
 				}
 
 				// check email not taken
-				var query = {email:userDoc.encEmail};
+				var query = {encEmail:userDoc.encEmail};
 				db.collection("users").find(query).toArray((err, docs)=>{
 					if(err){
 						db.close();
@@ -70,8 +161,19 @@ module.exports = function(){
 								console.log("attempt to send email");
 							}
 
+							this.sendVerifyEmail(userDoc).then((obj)=>{
+								// this.sendVerifyEmail resolve
+								db.close();
+								return resolve(obj);
+							},(obj)=>{
+								// this.sendVerifyEmail reject
+								db.close();
+								return reject(obj);
+							});
+
 
 						}else{
+							db.close();
 							return reject({ error: "failed to add user to db" });
 						}
 					},(err)=>{

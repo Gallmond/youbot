@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<meta charset="UTF-8">
+	<title>verify email</title>
+	</head>
+	<body>
+		<div>
+			<p>Please enter your token into the box below and submit to confirm your email address</p>
+			<form method="GET" action="">
+				<input type="text" placeholder="enter token here" name="token" value="<%= verification_token ? verification_token : '' %>"/>
+				<button type="submit">verify my email</button>
+			</form>
+			<p><%= typeof error_message != 'undefined' ? error_message : '' %></p>
+		</div>
+	</body>
+</html>

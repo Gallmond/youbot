@@ -9,13 +9,7 @@
 			<p>Thank you for registering on <%= process.env.APP_NAME %></p>
 			<p><h1><a href="<%= process.env.APP_DOMAIN %>/verify_email/<%= verification_token %>">click here</a></h1> to verify your email address</p>
 			<p>or copy the token inside the [brackets] below and paste it into the box at <a href="<%= process.env.APP_DOMAIN %>/verify_email"><%= process.env.APP_DOMAIN %>/verify_email</a></p>
-			<br />
-			<br />
 			<h2>token: [<%= verification_token %>]</h2>
-
-
 		</div>
-
-
 	</body>
 </html>
