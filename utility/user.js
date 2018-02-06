@@ -8,6 +8,29 @@ module.exports = function(){
 		var passOutput = salt+""+hexDerrivedKey;
 		return passOutput;
 	};
+	this.comparePassword = (_plainTextPass, _hashedPass)=>{
+		// get salt off
+		var saltPart = _hashedPass.substring(0,32);
+		var nonSaltPart = _hashedPass.substring(32);
+
+		// re-generate the pass
+		var derrivedKey = this.crypto.pbkdf2Sync(_plainTextPass, saltPart, 100000, 512, 'sha512');
+		var hexDerrivedKey = derrivedKey.toString('hex');
+		var passOutput = saltPart+""+hexDerrivedKey;
+
+		if(process.env.APP_DEBUG=="true"){
+			console.log("_plainTextPass:", _plainTextPass);
+			console.log("passOutput:", passOutput);
+			console.log("_hashedPass:", _hashedPass);
+		}
+
+		// does this match the passed-in hashedpass?
+		if(passOutput === _hashedPass){
+			return true;	
+		}else{
+			return false;
+		}
+	};
 
 	this.attemptEmailVerification = (_verificationtoken)=>{
 		return new Promise((resolve, reject)=>{
@@ -185,5 +208,81 @@ module.exports = function(){
 			});
 		});
 	};// signup end
+
+	// sets ssn.logged_in to true
+	this.login = (_email, _password)=>{
+		return new Promise((resolve, reject)=>{
+
+			ssn.logged_in = false;
+			var encEmail = helpers.enc(_email);
+
+			this.mongo.MongoClient.connect(process.env.MONGO_URL, (err, db)=>{
+				if(err){
+					return reject({error: "couldn't connect to mongodb", details:err});
+				}
+
+				// find row with this email
+				var query = {encEmail:encEmail};
+				db.collection("users").find(query).toArray((err, docs)=>{
+					if(err){
+						db.close();
+						return reject({error: "error looking up email", details:err});
+					}
+
+					if(docs.length==1){
+
+						// compare the passes
+						if(!this.comparePassword(_password, docs[0].hashPassword)){
+							db.close();
+							return reject({error: "password is incorrect"});
+						}else{
+
+							// log in and update 
+							ssn.logged_in = true;
+
+							// search and update if exists
+							var query = {
+								_id: new mongo.ObjectId(docs[0]._id)
+							}
+							var now = new Date().valueOf();
+							var update = {
+								$set: {
+									last_login: now
+								}
+							}
+							
+							db.collection("users").findOneAndUpdate(query, update, {returnOriginal: false}, (err, result)=>{
+								if(err){
+									db.close();
+									return reject({error: "error in findOneAndUpdate", details:err});
+								}
+								if(result.ok){
+									db.close();
+
+									if(result.lastErrorObject.updatedExisting){
+										return resolve({success:"logged in"});
+									}else{
+										return reject({error:"error attempting to update last_login"});
+									}
+									
+								}
+
+							});// findone and update end
+							// log in and update end
+
+						}
+
+
+					}else{
+						db.close();
+						return reject({error: "no account with this email"});	
+					}
+				});// find end
+
+
+			});// connect end
+
+		});
+	};// login end
 
 }

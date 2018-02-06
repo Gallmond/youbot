@@ -21,6 +21,37 @@ crypto = require('crypto');
 express = require('express');
 app = express();
 
+// ========== sessions start
+var assert = require('assert');
+session = require('express-session');
+MongoDBStore = require('connect-mongodb-session')(session);
+var store = new MongoDBStore({
+	uri: process.env.MONGO_URL,
+	collection: 'sessions'
+});
+// Catch errors
+store.on('error', function(error) {
+	assert.ifError(error);
+	assert.ok(false);
+});
+// start session
+var sesssionOptions = {
+	secret: '7NFVOF8P',
+	cookie: {},
+	store: store,
+	resave: false,
+	saveUninitialized: false
+}
+app.use(session(sesssionOptions));
+ssn = undefined;
+app.use(function(req,res,next){
+	if(req.session){
+		ssn = req.session;
+	}
+	next();
+});
+// ========= sessions end
+
 // templates
 ejs = require('ejs'); // https://www.npmjs.com/package/ejs
 
@@ -71,25 +102,55 @@ app.get(['/signup','/login'], (req, res)=>{
 // signup and login form handling
 app.post(['/signup','/login'], (req, res)=>{
 
-	// get input
-	var email = String(req.postparams["signup_email"]);
-	var pass = String(req.postparams["signup_password"]);
+	if( req.postparams["form_type"]=="signup" ){ // if signup 
 
-	user.signup(email, pass).then((obj)=>{
-		// signup() resolve
-		console.log("user.signup resolved:");
-		console.log(obj);
+		// get input
+		var email = String(req.postparams["signup_email"]);
+		var pass = String(req.postparams["signup_password"]);
 
-	},(obj)=>{
-		// signup() reject
-		console.log("user.signup reject:");
-		console.log(obj);
+		user.signup(email, pass).then((obj)=>{
+			// signup() resolve
+			console.log("user.signup resolved:");
+			console.log(obj);
 
-	})
+		},(obj)=>{
+			// signup() reject
+			console.log("user.signup reject:");
+			console.log(obj);
 
-	res.send("Thank you. Please check your email inbox for the verification link.");
+		})
+
+		res.send("Thank you. Please check your email inbox for the verification link.");
+
+	}else if( req.postparams["form_type"]=="login" ){ // if login
+		
+		// get in put
+		var email = String(req.postparams["login_email"]);
+		var pass = String(req.postparams["login_password"]);
+
+		user.login(email, pass).then((obj)=>{
+			// user.login resolve
+			console.log("user.login resolve:");
+			console.log(obj);
+			res.send("LOGGED IN! ssn.logged_in: "+String(ssn.logged_in));
+
+		},(obj)=>{
+			// user.login reject
+			console.log("user.login reject:");
+			console.log(obj);
+			res.send("FAILED TO LOG IN");
+
+		});
+
+	}
+
+	
 
 });
+app.get('/logout', (req, res)=>{
+	ssn.logged_in = false;
+	res.send("LOGGED OUT");
+});//logout end
 
 // verification destination
 app.get(['/verify_email/:token','/verify_email'], (req, res)=>{
@@ -111,7 +172,7 @@ app.get(['/verify_email/:token','/verify_email'], (req, res)=>{
 			// attemptEmailVerification resolve
 			console.log("user.signup resolved:");
 			console.log(obj);
-			res.send("OK SEND TO DASHBOARD");
+			res.send("OK SEND TO LOGIN PAGE");
 		},(obj)=>{
 			// attemptEmailVerification reject
 			console.log("user.signup resolved:");
@@ -138,20 +199,12 @@ app.get(['/verify_email/:token','/verify_email'], (req, res)=>{
 
 app.get(['/test'], (req, res)=>{
 	
-	// var str = helpers.template('email.verify_email', {foo: "bar"});
-	// console.log("str", str);
-	// res.send(str);
+	console.log("ssn.foobar", ssn.foobar);
 
-	helpers.template('verify_email', {verification_token: "thisistoken"}).then((obj)=>{
-		// template resolve
-		res.send(obj.str);
+	// set session var
+	ssn.foobar = "hello";
 
-	},(obj)=>{
-		// template reject	
-		console.log("template reject", obj);
-		res.send(obj.error);
-
-	});
+	res.send( ssn.foobar );
 
 
 });

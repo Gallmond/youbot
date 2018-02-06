@@ -18,7 +18,7 @@
 			<input id="signup_email_confirm" name="signup_email_confirm" type="email" placeholder="gallmond+youbot@gmail.com" <% if(debug){ %>value="gallmond+youbot@gmail.com"<% } %> /><br />
 			<label for="signup_password">enter password</label><br />
 			<input id="signup_password" name="signup_password" type="password" <% if(debug){ %>value="password"<% } %> /><br />
-			<button type="submit">sign up</button>
+			<button type="submit" name="form_type" value="signup">sign up</button>
 		</form>
 	</div>
 
@@ -29,7 +29,7 @@
 			<input id="login_email" name="login_email" type="email" placeholder="gallmond+youbot@gmail.com" <% if(debug){ %>value="gallmond+youbot@gmail.com"<% } %> /><br />
 			<label for="login_password">enter password</label><br />
 			<input id="login_password" name="login_password" type="password" <% if(debug){ %>value="password"<% } %> /><br />
-			<button type="submit">log in</button>
+			<button type="submit" name="form_type" value="login">log in</button>
 		</form>
 	</div>
 
