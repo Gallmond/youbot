@@ -1,6 +1,12 @@
 module.exports = function(){
 	this.crypto = (typeof crypto === "undefined" ? require('crypto') : crypto);
 	this.mongo = (typeof mongo === "undefined" ? require('mongodb') : mongo);
+	this.options = {
+		password_reset_expires: (60*60*6) // 6 hours in seconds
+	};
+
+		
+	
 	this.generatePassword = (_plaintextpass)=>{
 		var salt = this.crypto.randomBytes(16).toString('hex'); // 32 char as hex
 		var derrivedKey = this.crypto.pbkdf2Sync(_plaintextpass, salt, 100000, 512, 'sha512');
@@ -8,6 +14,8 @@ module.exports = function(){
 		var passOutput = salt+""+hexDerrivedKey;
 		return passOutput;
 	};
+	
+
 	this.comparePassword = (_plainTextPass, _hashedPass)=>{
 		// get salt off
 		var saltPart = _hashedPass.substring(0,32);
@@ -32,6 +40,7 @@ module.exports = function(){
 		}
 	};
 
+	
 	this.attemptEmailVerification = (_verificationtoken)=>{
 		return new Promise((resolve, reject)=>{
 
@@ -87,6 +96,7 @@ module.exports = function(){
 		});
 	}; // this.attemptEmailVerification end
 
+	
 	this.sendVerifyEmail = (_userdoc)=>{
 		return new Promise((resolve, reject)=>{
 			if(process.env.APP_DEBUG=="true"){
@@ -130,6 +140,7 @@ module.exports = function(){
 			}
 		});
 	};// sendVerifyEmail end
+	
 	
 	this.signup = (_email, _password)=>{
 		return new Promise((resolve, reject)=>{
@@ -209,7 +220,7 @@ module.exports = function(){
 		});
 	};// signup end
 
-	// sets ssn.logged_in to true
+	
 	this.login = (_email, _password)=>{
 		return new Promise((resolve, reject)=>{
 
@@ -284,5 +295,72 @@ module.exports = function(){
 
 		});
 	};// login end
+
+
+	this.requestPasswordResetToken = (_email)=>{
+		return new Promise((resolve, reject)=>{
+
+			if(!helpers.valid.email(_email)){
+				return reject({error:"this is not a valid email address"});
+			}
+
+			// find and update
+			var reset_token = helpers.randomString(32);
+			var query = {
+				encEmail: helpers.enc(_email)
+			}
+			var update = {
+				$set:{
+					password_reset_token: reset_token
+				}
+			}
+			db.collection("users").findOneAndUpdate(query, update, {returnOriginal: false}, (err, result)=>{
+				
+				if(err){
+					db.close();
+					return reject({error:"error in update", details:err});
+				}
+
+				if(result.ok){
+					db.close();
+
+					if(result.lastErrorObject.updatedExisting){
+						
+						// SEND EMAIL
+						helpers.template('email.reset_password_email', {password_reset_token:reset_token}).then((obj)=>{
+							// template return resolved
+							var emailBody = obj.str;
+							var to = _email;
+							var from = process.env.APP_EMAIL;
+							var subject = "Reset your password";
+							var passwordResetEmail = new email(to, from, subject, emailbody);
+							passwordResetEmail.send().then((obj)=>{
+								// email send resolve
+								return resolve({success:"password reset email was sent", details:obj});
+							},(obj)=>{
+								// email send rejected
+								return reject({error: "email failed to send", details:obj});
+							});
+
+						},(obj)=>{
+							// template return rejected
+							return reject({error: "couldn't get email string", details:obj});
+						});
+
+
+					}else{
+						return reject({error: "could not find user doc with this email"});
+					}
+					
+				}
+			
+				db.close();
+				return reject({error: "findOneAndUpdate failed", details: result});
+
+			});
+			// find and update end
+
+		});
+	}; // requestPasswordResetToken
 
 }

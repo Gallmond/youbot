@@ -43,7 +43,6 @@ module.exports.valid = {
 			return true;
 		}
 	}
-
 }
 
 module.exports.enc = (_string)=>{
@@ -66,8 +65,6 @@ module.exports.dec = (_string)=>{
 	return dec;
 }
 
-
-
 module.exports.template = (_pathfromviewfolder, _data)=>{ // where _path is like emails.filename
 	return new Promise((resolve, reject)=>{
 		if(!ejs){
@@ -82,4 +79,19 @@ module.exports.template = (_pathfromviewfolder, _data)=>{ // where _path is like
 			return resolve({success: "ejs rendered file", str:_str });
 		});
 	});
+}
+
+module.exports.randomString = (_charlen)=>{
+	if(typeof crypto == "undefined"){
+		var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+		var s = [];
+		for (var i = 0; i < _charlen; i++){
+			s[i] = chars.charAt(Math.floor(Math.random() * chars.length));
+		}
+		return s.join("");
+	}else{
+		var n = Math.round(_charlen/2);
+		return crypto.randomBytes(n==0?1:n).toString('hex').substring(0,_charlen);
+	}
+
 }

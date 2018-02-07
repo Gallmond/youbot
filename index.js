@@ -143,14 +143,12 @@ app.post(['/signup','/login'], (req, res)=>{
 		});
 
 	}
-
-	
-
 });
+
 app.get('/logout', (req, res)=>{
 	ssn.logged_in = false;
 	res.send("LOGGED OUT");
-});//logout end
+});
 
 // verification destination
 app.get(['/verify_email/:token','/verify_email'], (req, res)=>{
@@ -187,6 +185,19 @@ app.get(['/verify_email/:token','/verify_email'], (req, res)=>{
 
 		res.render('verify_email', {debug:process.env.APP_DEBUG, verification_token:req.params.token});
 	}
+});
+
+// show page to request password reset
+app.get(['/reset_password', '/reset_password/:password_reset_token'], (req, res)=>{
+
+	// if the pass reset token is in the url, try doing that
+	if(req.params.password_reset_token!=undefined){
+		res.send("OK");
+	}else{
+		// if the token is not set, show the request page
+		res.render('password_reset_request', {debug:process.env.APP_DEBUG});
+
+	}
 
 });
 
@@ -199,13 +210,13 @@ app.get(['/verify_email/:token','/verify_email'], (req, res)=>{
 
 app.get(['/test'], (req, res)=>{
 	
-	console.log("ssn.foobar", ssn.foobar);
+	var r1 = helpers.randomString(36);
 
-	// set session var
-	ssn.foobar = "hello";
+	console.log("r1", r1, "r1.length", r1.length);
 
-	res.send( ssn.foobar );
+	res.send("OK");
 
+	//res.render('password_reset', {debug:process.env.APP_DEBUG, password_reset_token:false});
 
 });
 // ================================== TESTING
