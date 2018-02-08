@@ -2,7 +2,7 @@ module.exports = function(){
 	this.crypto = (typeof crypto === "undefined" ? require('crypto') : crypto);
 	this.mongo = (typeof mongo === "undefined" ? require('mongodb') : mongo);
 	this.options = {
-		password_reset_expires: (60*60*6) // 6 hours in seconds
+		password_reset_expires_seconds: (60*60*6) // 6 hours in seconds
 	};
 
 		
@@ -11,9 +11,8 @@ module.exports = function(){
 		var salt = this.crypto.randomBytes(16).toString('hex'); // 32 char as hex
 		var derrivedKey = this.crypto.pbkdf2Sync(_plaintextpass, salt, 100000, 512, 'sha512');
 		var hexDerrivedKey = derrivedKey.toString('hex');
-		var passOutput = salt+""+hexDerrivedKey;
-		return passOutput;
-	};
+		return salt+""+hexDerrivedKey;
+	};// generatePassword
 	
 
 	this.comparePassword = (_plainTextPass, _hashedPass)=>{
@@ -26,7 +25,7 @@ module.exports = function(){
 		var hexDerrivedKey = derrivedKey.toString('hex');
 		var passOutput = saltPart+""+hexDerrivedKey;
 
-		if(process.env.APP_DEBUG=="true"){
+		if(debug){
 			console.log("_plainTextPass:", _plainTextPass);
 			console.log("passOutput:", passOutput);
 			console.log("_hashedPass:", _hashedPass);
@@ -38,7 +37,7 @@ module.exports = function(){
 		}else{
 			return false;
 		}
-	};
+	};// comparePassword
 
 	
 	this.attemptEmailVerification = (_verificationtoken)=>{
@@ -70,7 +69,7 @@ module.exports = function(){
 						return reject({error:"error in update", details:err});
 					}
 
-					if(process.env.APP_DEBUG=="true"){
+					if(debug){
 						console.log("result", result);
 						console.log("query", query);
 					}
@@ -94,12 +93,12 @@ module.exports = function(){
 			});// connect end
 
 		});
-	}; // this.attemptEmailVerification end
+	}; // this.attemptEmailVerification
 
 	
 	this.sendVerifyEmail = (_userdoc)=>{
 		return new Promise((resolve, reject)=>{
-			if(process.env.APP_DEBUG=="true"){
+			if(debug){
 				console.log("in sendVerifyEmail");
 			}
 
@@ -119,14 +118,14 @@ module.exports = function(){
 					var verifyEmail = new emailer(to, from, subject, emailbody); // (_to, _from, _subject, _emailbody)
 					verifyEmail.send().then((obj)=>{
 						// emailer send resolve
-						if(process.env.APP_DEBUG=="true"){
+						if(debug){
 							console.log("verifyEmail.send sent");
 							console.log(obj);
 						}
 						return resolve({success:"send verification email", details: obj});
 					},(obj)=>{
 						// emailer send reject
-						if(process.env.APP_DEBUG=="true"){
+						if(debug){
 							console.log("verifyEmail.send failed");
 							console.log(obj);
 						}
@@ -139,7 +138,7 @@ module.exports = function(){
 				});
 			}
 		});
-	};// sendVerifyEmail end
+	};// sendVerifyEmail
 	
 	
 	this.signup = (_email, _password)=>{
@@ -191,7 +190,7 @@ module.exports = function(){
 						if(res.result.n==1){
 
 							// attempt to send email
-							if(process.env.APP_DEBUG=="true"){
+							if(debug){
 								console.log("attempt to send email");
 							}
 
@@ -218,7 +217,7 @@ module.exports = function(){
 				});
 			});
 		});
-	};// signup end
+	};// signup
 
 	
 	this.login = (_email, _password)=>{
@@ -294,7 +293,7 @@ module.exports = function(){
 			});// connect end
 
 		});
-	};// login end
+	};// login
 
 
 	this.requestPasswordResetToken = (_email)=>{
@@ -304,63 +303,186 @@ module.exports = function(){
 				return reject({error:"this is not a valid email address"});
 			}
 
-			// find and update
-			var reset_token = helpers.randomString(32);
-			var query = {
-				encEmail: helpers.enc(_email)
-			}
-			var update = {
-				$set:{
-					password_reset_token: reset_token
-				}
-			}
-			db.collection("users").findOneAndUpdate(query, update, {returnOriginal: false}, (err, result)=>{
-				
+			// connect
+			this.mongo.MongoClient.connect(process.env.MONGO_URL, (err, db)=>{
+
 				if(err){
 					db.close();
-					return reject({error:"error in update", details:err});
+					return reject({error:"error trying to connect to db", details:err});
 				}
 
-				if(result.ok){
-					db.close();
+				// find and update
+				var reset_token = helpers.randomString(32);
+				var now = new Date().valueOf();
+				var query = {
+					encEmail: helpers.enc(_email)
+				}
+				var update = {
+					$set:{
+						password_reset_token: reset_token,
+						password_reset_token_created: now
+					}
+				}
+				db.collection("users").findOneAndUpdate(query, update, {returnOriginal: false}, (err, result)=>{
+					
+					if(err){
+						db.close();
+						return reject({error:"error in update", details:err});
+					}
 
-					if(result.lastErrorObject.updatedExisting){
-						
-						// SEND EMAIL
-						helpers.template('email.reset_password_email', {password_reset_token:reset_token}).then((obj)=>{
-							// template return resolved
-							var emailBody = obj.str;
-							var to = _email;
-							var from = process.env.APP_EMAIL;
-							var subject = "Reset your password";
-							var passwordResetEmail = new email(to, from, subject, emailbody);
-							passwordResetEmail.send().then((obj)=>{
-								// email send resolve
-								return resolve({success:"password reset email was sent", details:obj});
+					if(result.ok){
+						db.close();
+
+						if(result.lastErrorObject.updatedExisting){
+							
+							// SEND EMAIL
+							helpers.template('email.reset_password_email', {password_reset_token:reset_token}).then((obj)=>{
+								// template return resolved
+								var emailbody = obj.str;
+								var to = _email;
+								var from = process.env.APP_EMAIL;
+								var subject = "Reset your password";
+								var passwordResetEmail = new emailer(to, from, subject, emailbody);
+								passwordResetEmail.send().then((obj)=>{
+									// email send resolve
+									return resolve({success:"password reset email was sent", details:obj});
+								},(obj)=>{
+									// email send rejected
+									return reject({error: "email failed to send", details:obj});
+								});
+
 							},(obj)=>{
-								// email send rejected
-								return reject({error: "email failed to send", details:obj});
+								// template return rejected
+								return reject({error: "couldn't get email string", details:obj});
 							});
 
-						},(obj)=>{
-							// template return rejected
-							return reject({error: "couldn't get email string", details:obj});
-						});
 
-
+						}else{
+							return reject({error: "could not find user doc with this email"});
+						}
+						
 					}else{
-						return reject({error: "could not find user doc with this email"});
+						db.close();
+						return reject({error: "findOneAndUpdate failed", details: result});
 					}
-					
-				}
-			
-				db.close();
-				return reject({error: "findOneAndUpdate failed", details: result});
 
-			});
-			// find and update end
+				});
+				// find and update end
+
+			});// connect end
+
+			
 
 		});
 	}; // requestPasswordResetToken
+
+
+	this.checkPasswordResetTokenValidity = (_token)=>{ // returns token in resolve obj if successful
+		return new Promise((resolve, reject)=>{
+
+			// connect
+			this.mongo.MongoClient.connect(process.env.MONGO_URL, (err, db)=>{
+				if(err){
+					db.close();
+					return reject({error:"error trying to connect to db", details:err});
+				}
+
+				// check token exists in timeframe
+				var now = new Date().valueOf();
+				var invalid_after = now-this.options.password_reset_expires_seconds*1000;
+
+				var query = {
+					password_reset_token: _token,
+					password_reset_token_created: { $gt: invalid_after }
+				}
+
+				if(debug){
+					console.log("query", query);
+				}
+
+				db.collection("users").find(query).toArray((err, docs)=>{
+					db.close();
+					
+					if(err){
+						return reject({error:"error trying to connect to db", details:err});
+					}
+
+					if(docs.length==0){
+						return reject({error: "no account with this valid token"});
+					}else if(docs.length==1){
+						// token exists and is valid, forward onto form
+						return resolve({success:"token is valid", token:docs[0].password_reset_token, _id:docs[0]._id});
+					}else{
+						return reject({error:"found more than one doc with this token???"});
+					}
+				});// find end
+			});// connect end
+		});
+	};// checkPasswordResetTokenValidity
+
+
+	this.resetPassword = (_token, _newPlainTextPassword)=>{
+		return new Promise((resolve, reject)=>{
+
+			var token = _token;
+			var newPlainTextPassword = _newPlainTextPassword;
+
+			// doublecheck validity (and get token)
+			this.checkPasswordResetTokenValidity(token).then((obj)=>{
+				// checPasswordResetTokenValidity resolve
+
+				// generate new password
+				var newPassword = this.generatePassword(newPlainTextPassword);
+
+				// update user doc
+				var update = {
+					$set: {
+						hashPassword: newPassword,
+					},
+					$unset: {
+						verified_email_token: "",
+						password_reset_token_created: ""
+					}
+				}
+
+				var query = {
+					_id: new this.mongo.ObjectId(obj._id)
+				}
+
+				// connect
+				this.mongo.MongoClient.connect(process.env.MONGO_URL, (err, db)=>{
+					if(err){
+						db.close();
+						return reject({error:"error trying to connect to db", details:err});
+					}
+
+					db.collection("users").findOneAndUpdate(query, update, {returnOriginal: false}, (err, result)=>{
+						
+						if(err){
+							db.close();
+							return reject({error:"error in update", details:err});
+						}
+
+						if(result.ok){
+							db.close();
+
+							if(result.lastErrorObject.updatedExisting){
+								return resolve({success:"password was updated"});
+							}else{
+								return reject({error:"couldn't find document with this id"});
+							}
+							
+						}
+					});// find and update end
+
+				});// connect end
+
+			},(obj)=>{
+				// checPasswordResetTokenValidity reject
+				return reject({error:"token is invalid", details: obj});
+			})
+
+		});
+	};// resetPassword
 
 }

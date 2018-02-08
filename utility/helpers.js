@@ -93,5 +93,4 @@ module.exports.randomString = (_charlen)=>{
 		var n = Math.round(_charlen/2);
 		return crypto.randomBytes(n==0?1:n).toString('hex').substring(0,_charlen);
 	}
-
 }

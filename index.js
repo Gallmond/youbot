@@ -11,6 +11,8 @@ if(!process.env.APP_ENVIRONMENT || process.env.APP_ENVIRONMENT=="local"){
 	}
 }
 
+debug = (process.env.APP_DEBUG==="true")
+
 // database
 mongo = require('mongodb');
 
@@ -192,12 +194,70 @@ app.get(['/reset_password', '/reset_password/:password_reset_token'], (req, res)
 
 	// if the pass reset token is in the url, try doing that
 	if(req.params.password_reset_token!=undefined){
-		res.send("OK");
+		
+		user.checkPasswordResetTokenValidity(req.params.password_reset_token).then((obj)=>{
+			// checkPasswordResetTokenValidity resolve
+			res.render('password_reset', {debug:process.env.APP_DEBUG, password_reset_token:obj.token});
+
+		},(obj)=>{
+			// checkPasswordResetTokenValidity reject
+			console.log(obj);
+			res.send("this token is either invalid or expired. Please request another");
+		});
+
 	}else{
 		// if the token is not set, show the request page
 		res.render('password_reset_request', {debug:process.env.APP_DEBUG});
 
 	}
+
+});
+app.post(['/reset_password', '/reset_password/:password_reset_token'], (req,res)=>{
+
+	// check params
+	if(req.postparams["request_email"]!=undefined){
+
+		var email = req.postparams["request_email"];
+
+		user.requestPasswordResetToken(email).then((obj)=>{
+			// requestPasswordResetToken resolve
+			console.log(obj);
+			res.send("please check emails for reset token");
+
+		},(obj)=>{
+			// requestPasswordResetToken reject
+			console.log(obj);
+			res.send("FAILED TO SEND PASS RESET");
+
+		});
+
+	}else if(req.postparams["reset_password"]!=undefined && req.postparams["reset_password_confirm"]!=undefined){
+
+		// check passes are the same and valid
+		if( !helpers.valid.password(req.postparams["reset_password"]) || (req.postparams["reset_password"]!=req.postparams["reset_password_confirm"]) ){
+			res.send("This password is invalid or does not match");
+		}else{
+
+			// update password
+			user.resetPassword(req.postparams["reset_password_token"], req.postparams["reset_password"]).then((obj)=>{
+				// resetPassword resolve
+				console.log(obj);
+				res.send("PASSWORD WAS RESET SEND EMAIL");
+
+			},(obj)=>{
+				// resetPassword reject
+				console.log(obj);
+				res.send("PASSWORD RESET FAILED");
+
+			});
+
+
+		}else{
+			res.send("BAD FORM");	
+		}
+
+		
+	};
 
 });
 
