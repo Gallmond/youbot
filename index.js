@@ -242,7 +242,7 @@ app.post(['/reset_password', '/reset_password/:password_reset_token'], (req,res)
 			user.resetPassword(req.postparams["reset_password_token"], req.postparams["reset_password"]).then((obj)=>{
 				// resetPassword resolve
 				console.log(obj);
-				res.send("PASSWORD WAS RESET SEND EMAIL");
+				res.send("PASSWORD WAS RESET REDIRECT TO LOGIN");
 
 			},(obj)=>{
 				// resetPassword reject

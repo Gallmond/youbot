@@ -1,0 +1,15 @@
+APP_ENVIRONMENT=local
+APP_DEBUG=true
+APP_DOMAIN=http://localhost:5000
+APP_NAME=application_name
+
+APP_EMAIL=noreply@application_name.com
+
+MONGO_URL=mongodb://username:password@host:port/database
+
+PASSWORD_MIN_LEN=8
+
+CURRENT_ENC_KEY=1
+ENC_KEY_1=
+
+SENDGRID_API_KEY=
