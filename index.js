@@ -252,13 +252,10 @@ app.post(['/reset_password', '/reset_password/:password_reset_token'], (req,res)
 			});
 
 
-		}else{
-			res.send("BAD FORM");	
 		}
 
 		
 	};
-
 });
 
 
@@ -270,13 +267,31 @@ app.post(['/reset_password', '/reset_password/:password_reset_token'], (req,res)
 
 app.get(['/test'], (req, res)=>{
 	
-	var r1 = helpers.randomString(36);
+	var data = {
+		debug: process.env.APP_DEBUG,
+		bots: [
+			{
+				id:"bot_id_1",
+				name:"bot_name_1",
+				channels:["bot_1_channel", "bot_1_channel", "bot_1_channel"],
+				status:"bot_status_1"
+			},
+			{
+				id:"bot_id_2",
+				name:"bot_name_2",
+				channels:["bot_2_channel", "bot_2_channel", "bot_2_channel"],
+				status:"bot_status_2"
+			},
+			{
+				id:"bot_id_3",
+				name:"bot_name_3",
+				channels:["bot_3_channel", "bot_3_channel", "bot_3_channel"],
+				status:"bot_status_3"
+			},
+		]
+	}
 
-	console.log("r1", r1, "r1.length", r1.length);
-
-	res.send("OK");
-
-	//res.render('password_reset', {debug:process.env.APP_DEBUG, password_reset_token:false});
+	res.render('dashboard', data);
 
 });
 // ================================== TESTING

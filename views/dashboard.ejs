@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title><%- process.env.APP_NAME %> | Dashboard</title>
+  </head>
+  <body>
+  
+  	<div id="botlist">
+  		<!-- EXISTING BOTS HERE -->
+  		<% bots.forEach(function(bot){ %>
+  			<div class="botcard">
+  				<p><%- bot.name %> | <%- bot.channels.join(", ") %> | <%- bot.status %></p>
+  			</div>
+  		<% }); %>
+
+  	</div>
+
+  	<div id="new_bot_form_holder">
+  		<form id="create_bot_form" action="" method="POST">
+  			<label for="newbotname">Account Name (Twitch.tv account the bot will speak through)</label><br />
+  			<input id="newbotname" name="newbotname" type="text" placeholder="HAL_9000"/><br />
+  			<label for="newbotname">Channel (Twitch.tv channel the bot will live in)</label><br />
+  			<input id="newbotchannel" name="newbotchannel" type="text" placeholder="Discovery_One"/><br />
+  			<label>Click below to authorize this twitch account and create the chatbot</label><br />
+  			<button id="newbotsubmit" type="submit" >Create bot</button>
+
+  		</form>
+
+  	</div>
+
+
+  </body>
+</html>
